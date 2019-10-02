@@ -8,10 +8,10 @@ int main(int argc, char **argv) {
     double step_max = 0;
 
     //int matrix_size = atoi(argv[1]);
-    double a[matrix_size][matrix_size] = {{3, 2, 2, 4},
-                                          {2, 4, 1, 3},
-                                          {2, 3, 4, 1},
-                                          {1, 2, 1, 2},
+    double a[matrix_size][matrix_size] = {{3,4,1,2},
+                                          {2,3,4,1},
+                                          {1,2,3,4},
+                                          {4,1,2,3}
 
 
     };
@@ -55,11 +55,10 @@ int main(int argc, char **argv) {
         for (int k = j + 1; k < matrix_size; k++) {
             for (int l = 0; l < j + 1; l++) {
                 a[stringConseq[k]][j + 1] -= a[stringConseq[k]][l] * a[stringConseq[l]][k];
-                printf("%f,%f  ", a[stringConseq[k]][l], a[stringConseq[l]][k]);
             }
         }
 
-        if (j != 2) {
+        if (j != matrix_size-1) {
             step_max = a[stringConseq[j + 1]][j + 1];
 
         }
@@ -80,6 +79,10 @@ int main(int argc, char **argv) {
         printf("%f ", step_max);
 
     }
+
+
+
+
 
 
     printf("STRING CONSEQ:  ");
