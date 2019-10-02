@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     stringConseq[first_index] = 0;
     step_max = a[first_index][0];
 
-    printf("%f\n", step_max);
+    printf("%fkek\n", step_max);
 
     for (int j = 0; j < matrix_size; j++) { //ЦИКЛ СТРОКА-СТОЛБЕЦ-МАКСИМУМ
 
@@ -54,7 +54,8 @@ int main(int argc, char **argv) {
         //ДЕЛАЕМ СТОЛБЕЦ
         for (int k = j + 1; k < matrix_size; k++) {
             for (int l = 0; l < j + 1; l++) {
-                a[stringConseq[k]][j + 1] -= a[stringConseq[k]][l] * a[stringConseq[l]][k];
+                a[stringConseq[k]][j + 1] -= a[stringConseq[k]][l] * a[stringConseq[l]][j+1];
+                printf("%f *** %f  ",a[stringConseq[k]][l] , a[stringConseq[l]][j+1]);
             }
         }
 
