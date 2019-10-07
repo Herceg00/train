@@ -96,6 +96,7 @@ short decision(int n, float **a, float *b, float *x, int *stringConseq) {
         }
     }
     free(y);
+    return 1;
 }
 
 void output(float **a, int *stringConseq, int matrix_size) {
@@ -189,8 +190,13 @@ float discrepancy(float **a, int *stringConseq, int matrix_size, float *b, float
 
 
 int main(int argc, char **argv) {
+    if(argc<3){
+        printf("argv[1] - input file , argv[2] = formula if you want a formula mode");
+        return 0;
+    }
     FILE *file = fopen(argv[1], "r");
     char *mode = argv[2];
+
     int matrix_size;
     short error;
     fscanf(file, "%d", &matrix_size);
