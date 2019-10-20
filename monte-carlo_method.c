@@ -49,12 +49,14 @@ int main(int argc, char **argv) {
     }
     monte_end = omp_get_wtime();
     FILE * stats = fopen("stats.txt","r+");
+    if(stats == NULL){
+        stats = stdout;
+    }
     fprintf(stats,"PROBABILITY OF REACHING B:%f\n",((float)sum_reached_b/(float)N));
     fprintf(stats, "AVERAGE LIFETIME:%lf\n",sum_lifetime/N);
     fprintf(stats,"METHOD LIFETIME:%lf\n",monte_end - monte_start);
     fprintf(stats, "SEGMENT: [%d,%d], INITIAL POSITION: %d ",a,b,x);
     fprintf(stats,"NUMBER OF ELEMENTS: %d, ATOMIC PROBABILITY: %f, NUMBER OF THREADS: %d\n",N,p,P);
-    fclose(stats);
 
 
 }
