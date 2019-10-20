@@ -10,6 +10,10 @@ int main(int argc, char **argv) {
     }
     int a = atoi(argv[1]);
     int b = atoi(argv[2]);
+    if( a >= b){
+        printf("Wrong segment");
+        return -1;
+    }
     int x = atoi(argv[3]);
     int N = atoi(argv[4]);
     double p = strtod(argv[5], NULL);
