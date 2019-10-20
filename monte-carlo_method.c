@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
     fprintf(stats,"METHOD LIFETIME:%lf\n",monte_end - monte_start);
     fprintf(stats, "SEGMENT: [%d,%d], INITIAL POSITION: %d ",a,b,x);
     fprintf(stats,"NUMBER OF ELEMENTS: %d, ATOMIC PROBABILITY: %f, NUMBER OF THREADS: %d\n",N,p,P);
+    fclose(stats);
 
 
 }
