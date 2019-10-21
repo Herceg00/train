@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <omp.h>
 #include <stdlib.h>
+#include "time.h"
+
+
 
 int main(int argc, char **argv) {
 
@@ -19,18 +22,25 @@ int main(int argc, char **argv) {
     double p = strtod(argv[5], NULL);
     int P = atoi(argv[6]);
 
-    srand(RAND_MAX);
+    //srand(RAND_MAX);
     omp_set_num_threads(P);
-    double born,single_lifetime,sum_lifetime, monte_start,monte_end;
+    double born=0,single_lifetime=0,sum_lifetime=0, monte_start=0,monte_end=0;
     int sum_reached_b = 0;
+    int *seeds =  (int *)calloc(P, sizeof(int));
+    for(int i=0;i<P;i++){
+        seeds[i] = omp_get_wtime();
+    }
 
     monte_start = omp_get_wtime();
 #pragma omp parallel for schedule(dynamic,1) shared(a,b,x,p,N)
     for (int i = 0; i < N; i++) {
         int position  = x;
+        //srand(seeds[omp_get_thread_num()]);
         born = omp_get_wtime();
         while((position!=b) && (position!=a)) {
-            if ((rand() % 100) / 100.0 >= p) {
+
+
+            if ((rand_r(&seeds[omp_get_thread_num()]) % 1000) / 1000.0 >= p) {
                 position--;
             } else {
                 position++;
@@ -57,6 +67,8 @@ int main(int argc, char **argv) {
     fprintf(stats,"METHOD LIFETIME:%lf\n",monte_end - monte_start);
     fprintf(stats, "SEGMENT: [%d,%d], INITIAL POSITION: %d ",a,b,x);
     fprintf(stats,"NUMBER OF ELEMENTS: %d, ATOMIC PROBABILITY: %f, NUMBER OF THREADS: %d\n",N,p,P);
+    fclose(stats);
+    free(seeds);
 
 
 }
