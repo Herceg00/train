@@ -10,13 +10,20 @@ short sign(double num) {
 }
 
 double cosinus_Fk(double x, double y) {
-    return sqrt(0.5 + abs(y)/(2*sqrt(pow(x,2)+pow(y,2))));
+    if (y == 0) {
+        return sqrt(2) / 2;
+    } else {
+        return sqrt(0.5 + abs(y) / (2 * sqrt(pow(x, 2) + pow(y, 2))));
+    }
 }
 
 double sinus_Fk(double x, double y) {
-    return sign(x*y)*abs(x)/(2*cosinus_Fk(x,y)*sqrt(pow(x,2)+pow(y,2)));
+    if (y == 0) {
+        return sqrt(2) / 2;
+    } else {
+        return sign(x * y) * abs(x) / (2 * cosinus_Fk(x, y) * sqrt(pow(x, 2) + pow(y, 2)));
+    }
 }
-
 
 double out_of_diag_sum(double** A,int matrix_size) {
     double sum = 0;
@@ -45,40 +52,51 @@ void chosen_element(double ** A, short strategy,int matrix_size, int* i,int* j,i
             }
             break;
         }
-        case 1: {
-            *i = (iteration / (matrix_size - 1));
+        case 1: {  // Пронумеровали все элементы и соотнесли с итерацией цикла
+            int number = pow(matrix_size,2) - matrix_size;
+            iteration = iteration % number;
+            int current_string = (iteration) / (matrix_size - 1);
+            *i = current_string;
+
             int mod;
             mod = iteration % (matrix_size - 1);
-            if (mod == 0) {
-                *j = matrix_size - 1;
-
-            } else {
+            if(mod>=current_string) {
+                *j = mod + 1;
+            }else{
                 *j = mod;
             }
+            printf("%d,%d\n",*i,*j);
             break;
+
         }
-        case 2: {
+
+        case 2: {  // Выбор максимального элемента из максимальной по модулю строчки
             int max_line = 0;
             double max_sum = 0;
-            for (int x = 1; x < matrix_size; x++) {
+
+            for (int string  = 1; string  < matrix_size; string++) {
                 double line_sum = 0;
-                for (int y = 0; y < matrix_size; y++) {
-                    if (x != y) {
-                        line_sum += pow(A[x][y],2);
+                for (int column = 0; column < matrix_size; column++) {
+                    if (string != column) {
+                        line_sum += pow(A[string][column],2);
                     }
                 }
-                if (line_sum > max_sum) {
-                    max_line = x;
+                if (line_sum >= max_sum) {
+                    max_line = string;
                     max_sum = line_sum;
                 }
 
             }
-            double max_elem = A[max_line][1];
-            for (int x = 0; x < matrix_size;x++) {
-                if ((x != max_line) && (abs(A[max_line][x]) > abs(max_elem))) {
-                    max_elem = A[max_line][x];
-                    *i = x;
-                    *j = max_line;
+
+
+            double max_elem = 0;
+
+
+            for (int column = 0; column < matrix_size;column++) {
+                if ((column != max_line) && (abs(A[max_line][column]) > abs(max_elem))) {
+                    max_elem = abs(A[max_line][column]);
+                    *j = column;
+                    *i = max_line;
                 }
             }
             break;
@@ -94,10 +112,13 @@ void chosen_element(double ** A, short strategy,int matrix_size, int* i,int* j,i
 void yakobi_rotation(int matrix_size, double** A,double** Eig, short strategy, double epsilon, double * eigenvalues) {
     int iteration = 0;
     while (out_of_diag_sum(A, matrix_size) > epsilon) {
-        iteration++;
+        //iteration++;
         int i = 0;
         int j = 0;
+        //int position = pow(matrix_size,2) - matrix_size;
+        //int current_iterarion = (iteration % position) +1;
         chosen_element(A,strategy,matrix_size,&i,&j,iteration);
+
         double cos  = cosinus_Fk(A[i][j]*(-2),A[i][i] - A[j][j]);
         double sin = sinus_Fk(A[i][j]*(-2),A[i][i] - A[j][j]);
         //A[i][i]
@@ -122,9 +143,10 @@ void yakobi_rotation(int matrix_size, double** A,double** Eig, short strategy, d
         A[j][j] = Ajj;
         A[i][j] = 0;
         A[j][i] = 0;
+        iteration++;
     }
 
-    for(int i = 0; i<matrix_size;i++){
+    for(int i = 0; i < matrix_size;i++){
         eigenvalues[i] = A[i][i];
     }
 
@@ -193,6 +215,11 @@ int main(int argc, char** argv) {
         }
         printf("\n");
     }
+    printf("\n\n\nEIGENVALUES:\n");
+    for (int j = 0; j < matrix_size; j++) {
+        printf("%lf  ",eigenvalues[j]);
+    }
+    printf("\n\n");
 
 
     fclose(file);
