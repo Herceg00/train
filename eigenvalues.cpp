@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include "string.h"
 #include "math.h"
+#include "time.h"
 
 
 short sign(double num) {
@@ -65,7 +66,7 @@ void chosen_element(double ** A, short strategy,int matrix_size, int* i,int* j,i
             }else{
                 *j = mod;
             }
-            printf("%d,%d\n",*i,*j);
+            //printf("%d,%d\n",*i,*j);
             break;
 
         }
@@ -109,24 +110,21 @@ void chosen_element(double ** A, short strategy,int matrix_size, int* i,int* j,i
 
 
 
-void yakobi_rotation(int matrix_size, double** A,double** Eig, short strategy, double epsilon, double * eigenvalues) {
+int  yakobi_rotation(int matrix_size, double** A,double** Eig, short strategy, double epsilon, double * eigenvalues) {
     int iteration = 0;
     while (out_of_diag_sum(A, matrix_size) > epsilon) {
-        //iteration++;
         int i = 0;
         int j = 0;
-        //int position = pow(matrix_size,2) - matrix_size;
-        //int current_iterarion = (iteration % position) +1;
+
         chosen_element(A,strategy,matrix_size,&i,&j,iteration);
 
         double cos  = cosinus_Fk(A[i][j]*(-2),A[i][i] - A[j][j]);
         double sin = sinus_Fk(A[i][j]*(-2),A[i][i] - A[j][j]);
-        //A[i][i]
         double Aii = pow(cos,2)*A[i][i] + pow(sin,2)*A[j][j] - 2*cos*sin*A[i][j];
-        //A[j][j]
         double Ajj =  pow(cos,2)*A[j][j] + pow(sin,2)*A[i][i] + 2*cos*sin*A[i][j];
-
-        for(int k = 0;k< matrix_size;k++){
+        for(int k = 0;k< matrix_size;k++) {
+            double temp3 = Eig[i][k]*cos - sin*Eig[j][k];
+            double temp4 = Eig[i][k]*sin + cos*Eig[j][k];
             if( (k!=i) && (k!=j)) {
                 double temp1 = A[i][k]*cos - sin*A[j][k];
                 double temp2 = A[k][i]*sin + cos*A[k][j];
@@ -136,20 +134,19 @@ void yakobi_rotation(int matrix_size, double** A,double** Eig, short strategy, d
                 A[j][k] = temp2;
 
             }
-
+            Eig[i][k] = temp3;
+            Eig[j][k] = temp4;
         }
-
         A[i][i] = Aii;
         A[j][j] = Ajj;
         A[i][j] = 0;
         A[j][i] = 0;
         iteration++;
     }
-
     for(int i = 0; i < matrix_size;i++){
         eigenvalues[i] = A[i][i];
     }
-
+    return iteration;
 }
 
 
@@ -163,6 +160,8 @@ int main(int argc, char** argv) {
     FILE * file = fopen("matrix.txt","r+");
     //int matrix_size = atoi(argv[1]);
     int matrix_size = 3;
+    double end;
+    double begin;
     double **A = (double**)calloc(sizeof(double*),matrix_size);
     for (int i = 0; i < matrix_size; i++) {
         A[i] = (double*)calloc(sizeof(double),matrix_size);
@@ -179,7 +178,7 @@ int main(int argc, char** argv) {
     //char* input = argv[2];
     //char input = 'k';
     //if (strcmp(input, "formula") == 0) {
-    if ( 3 == 0){
+    if ( 3 == 0){ // Без формулы пока что
         for (int i = 0; i < matrix_size; i++) {
             for (int j = 0; j < matrix_size; j++) {
                 A[i][j] = formula(i, j, matrix_size);
@@ -201,26 +200,44 @@ int main(int argc, char** argv) {
         }
         printf("\n");
     }
-    printf("\n\n\n");
 
     //short strategy = atoi(argv[3]);
 
-    short strategy = 0;
-    yakobi_rotation(matrix_size,A, Eig, strategy, 0.1, eigenvalues);
-
-
-    for (int i = 0; i < matrix_size; i++) {
+    short strategy = 1;
+    begin = clock();
+     int iters = yakobi_rotation(matrix_size,A, Eig, strategy, 0.00001, eigenvalues);
+    end = clock();
+    //Вывод матриц ( опущен)
+    /*for (int i = 0; i < matrix_size; i++) {
         for (int j = 0; j < matrix_size; j++) {
             printf("%lf  ",A[i][j]);
         }
         printf("\n");
     }
-    printf("\n\n\nEIGENVALUES:\n");
+    printf("\n");
+    for (int i = 0; i < matrix_size; i++) {
+        for (int j = 0; j < matrix_size; j++) {
+            printf("%lf  ",Eig[i][j]);
+        }
+        printf("\n");
+    }*/
+    printf("\nEIGENVALUES:\n");
     for (int j = 0; j < matrix_size; j++) {
         printf("%lf  ",eigenvalues[j]);
     }
-    printf("\n\n");
+    printf("\n\nEIGENVECTORS:\n");
+    for (int j = 0; j < matrix_size; j++) {
+        printf("[ ");
+        for (int k = 0; k < matrix_size; k++) {
+            printf("%lf  ", Eig[k][j]);
+        }
+        printf("] - for %d eigenvalue\n", j+1 );
 
+    }
+    printf("\n");
+
+    printf("%d iterations taken\n",iters);
+    printf("%f seconds taken \n",((end-begin)/ CLOCKS_PER_SEC));
 
     fclose(file);
     for (int k = 0; k < matrix_size; k++) {
