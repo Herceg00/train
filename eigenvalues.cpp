@@ -39,7 +39,7 @@ double out_of_diag_sum(double **A, int matrix_size) {
 }
 
 
-void chosen_element(double **A, short strategy, int matrix_size, int *i, int *j, int iteration) {
+void chosen_element(double **A, short strategy, int matrix_size, int *i, int *j, int iteration, double *string_sums) {
     switch (strategy) {
         case 0 : { // Выбираем опорный элемент среди всех элементов матрицы
             double max_elem = 0;
@@ -67,22 +67,16 @@ void chosen_element(double **A, short strategy, int matrix_size, int *i, int *j,
             } else {
                 *j = mod;
             }
-            //printf("%d,%d\n",*i,*j);
             break;
 
         }
 
         case 2: {  // Выбор максимального элемента из максимальной по модулю строчки
             int max_line = 0;
-            double max_sum = 0;
+            double max_sum = string_sums[0];
 
             for (int string = 1; string < matrix_size; string++) {
-                double line_sum = 0;
-                for (int column = 0; column < matrix_size; column++) {
-                    if (string != column) {
-                        line_sum += pow(A[string][column], 2);
-                    }
-                }
+                double line_sum = string_sums[string];
                 if (line_sum >= max_sum) {
                     max_line = string;
                     max_sum = line_sum;
@@ -93,7 +87,6 @@ void chosen_element(double **A, short strategy, int matrix_size, int *i, int *j,
 
             double max_elem = 0;
 
-
             for (int column = 0; column < matrix_size; column++) {
                 if ((column != max_line) && (abs(A[max_line][column]) > abs(max_elem))) {
                     max_elem = abs(A[max_line][column]);
@@ -103,6 +96,7 @@ void chosen_element(double **A, short strategy, int matrix_size, int *i, int *j,
             }
             break;
         }
+
         default: {
 
         }
@@ -110,29 +104,49 @@ void chosen_element(double **A, short strategy, int matrix_size, int *i, int *j,
 }
 
 
-int yakobi_rotation(int matrix_size, double **A, double **Eig, short strategy, double epsilon, double *eigenvalues) {
+int
+yakobi_rotation(int matrix_size, double **A, double **Eig, short strategy, double epsilon, double *eigenvalues) {
     int iteration = 0;
     while (out_of_diag_sum(A, matrix_size) > epsilon) {
         int i = 0;
         int j = 0;
+        double *square_sums = (double *) calloc(sizeof(double), matrix_size);
+        int max_string1 = 0, max_string2 = 0, max_string3 = 0;
+        double max_value1 = 0, max_value2 = 0, max_value3 = 0;
 
-        chosen_element(A, strategy, matrix_size, &i, &j, iteration);
+        for (int x = 0; x < matrix_size; x++) {
+            for (int y = 0; y < matrix_size; y++) {
+                if (x != y) {
+                    square_sums[x] = square_sums[x] + A[x][y] * A[x][y];
+                }
+
+            }
+        }
+
+
+        chosen_element(A, strategy, matrix_size, &i, &j, iteration, square_sums);
+
+        square_sums[i] = 0;
+        square_sums[j] = 0;
 
         double cos = cosinus_Fk(A[i][j] * (-2), A[i][i] - A[j][j]);
         double sin = sinus_Fk(A[i][j] * (-2), A[i][i] - A[j][j]);
         double Aii = pow(cos, 2) * A[i][i] + pow(sin, 2) * A[j][j] - 2 * cos * sin * A[i][j];
         double Ajj = pow(cos, 2) * A[j][j] + pow(sin, 2) * A[i][i] + 2 * cos * sin * A[i][j];
+
         for (int k = 0; k < matrix_size; k++) {
             double temp3 = Eig[i][k] * cos - sin * Eig[j][k];
             double temp4 = Eig[i][k] * sin + cos * Eig[j][k];
             if ((k != i) && (k != j)) {
                 double temp1 = A[i][k] * cos - sin * A[j][k];
                 double temp2 = A[k][i] * sin + cos * A[k][j];
+                square_sums[k] = square_sums[k] - A[k][i] * A[k][i] - A[k][j] * A[k][j] + temp1 * temp1 + temp2 * temp2;
                 A[i][k] = temp1;
                 A[k][i] = temp1;
                 A[k][j] = temp2;
                 A[j][k] = temp2;
-
+                square_sums[i] += temp1 * temp1;
+                square_sums[j] += temp2 * temp2;
             }
             Eig[i][k] = temp3;
             Eig[j][k] = temp4;
@@ -151,6 +165,21 @@ int yakobi_rotation(int matrix_size, double **A, double **Eig, short strategy, d
 
 
 double formula(int x, int y, int matrix_size) {
+    if (x == y) {
+        if (x != matrix_size - 1) {
+            return 1;
+        }
+
+    }
+    if (x == matrix_size - 1) {
+        return y + 1;
+
+    }
+    if (y == matrix_size - 1) {
+        return x + 1;
+
+    }
+    return 0;
 
 }
 
@@ -189,19 +218,21 @@ int main(int argc, char **argv) {
             }
         }
     }
-
-    printf("ИСХОДНАЯ МАТРИЦА:\n");
-    for (int i = 0; i < matrix_size; i++) {
-        for (int j = 0; j < matrix_size; j++) {
-            printf("%lf  ", A[i][j]);
+    if (matrix_size < 99) {
+        printf("ИСХОДНАЯ МАТРИЦА:\n");
+        for (int i = 0; i < matrix_size; i++) {
+            for (int j = 0; j < matrix_size; j++) {
+                printf("%lf  ", A[i][j]);
+            }
+            printf("\n");
         }
-        printf("\n");
     }
 
     short strategy = atoi(argv[3]);
     begin = clock();
     int iters = yakobi_rotation(matrix_size, A, Eig, strategy, 0.00001, eigenvalues);
     end = clock();
+
     printf("\nEIGENVALUES:\n");
     for (int j = 0; j < matrix_size; j++) {
         printf("%lf  ", eigenvalues[j]);
@@ -213,14 +244,16 @@ int main(int argc, char **argv) {
     } else {
         filestream = file;
     }
-    fprintf(filestream, "\n\nEIGENVECTORS:\n");
-    for (int j = 0; j < matrix_size; j++) {
-        fprintf(filestream, "[ ");
-        for (int k = 0; k < matrix_size; k++) {
-            fprintf(filestream, "%lf  ", Eig[k][j]);
-        }
-        fprintf(filestream, "] - for %d eigenvalue\n", j + 1);
+    if (matrix_size < 99) {
+        fprintf(filestream, "\n\nEIGENVECTORS:\n");
+        for (int j = 0; j < matrix_size; j++) {
+            fprintf(filestream, "[ ");
+            for (int k = 0; k < matrix_size; k++) {
+                fprintf(filestream, "%lf  ", Eig[k][j]);
+            }
+            fprintf(filestream, "] - for %d eigenvalue\n", j + 1);
 
+        }
     }
 
 
