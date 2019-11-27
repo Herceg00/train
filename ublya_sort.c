@@ -108,7 +108,7 @@ static void min_max(const int *nums, const int n, int *min, int *max)
     }
 }
 
-static void merge(const int *c, const int *a, const int *b,int size_a, int size_b){
+static void merge(int *c, const int *a, const int *b,int size_a, int size_b){
     int i1=0,i2=0;
     for( int i =0;i<size_a+size_b;i++){
         if((i2 == size_b) || (i1!=size_a && a[i1] < b[i2])) {
@@ -120,21 +120,6 @@ static void merge(const int *c, const int *a, const int *b,int size_a, int size_
 }
 
 
-static void merge_two_parts(int *m, int *buffer, const int n) {
-    int a = 0, b = n / 2;
-    for (int i = 0; i < n; i++) {
-        if (b == n || (a != n / 2 && m[a] < m[b])) {
-            buffer[i] = m[a++];
-        } else {
-            buffer[i] = m[b++];
-        }
-    }
-
-    for (int i = 0; i < n; i++) {
-        m[i] = buffer[i];
-    }
-}
-
 
 static void sort(const int rank, const int size, int *nums, const int n){
     int *local_buffer;
@@ -144,6 +129,7 @@ static void sort(const int rank, const int size, int *nums, const int n){
     }
     int *merge_buffer;
     int flag_to_change,test_element;
+    
     merge_buffer = malloc(sizeof(int)*2*n);
     int *recv_buffer;
     recv_buffer = malloc(sizeof(int)*n);
@@ -151,10 +137,9 @@ static void sort(const int rank, const int size, int *nums, const int n){
     assert(merge_buffer);
     assert(local_buffer);
     qsort(local_buffer, n, sizeof(int), cmp); //Have sorted array on each process
+    int  not_sorted = 1;
 
-    short sorted = 0;
-
-    while(!sorted) {
+    while(not_sorted) {
         if((rank % 2 == 1)&&(rank!=size-1)) {
             MPI_Send(&local_buffer[n-1], 1, MPI_INTEGER, rank+1, rank, MPI_COMM_WORLD);
             MPI_Recv(&flag_to_change, 1, MPI_INTEGER, rank+1, rank+1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -183,7 +168,6 @@ static void sort(const int rank, const int size, int *nums, const int n){
             }
         }
         MPI_Barrier(MPI_COMM_WORLD);
-
         if(rank % 2 == 0){
             MPI_Send(&local_buffer[n-1], 1, MPI_INTEGER, rank+1, rank, MPI_COMM_WORLD);
             MPI_Recv(&flag_to_change, 1, MPI_INTEGER, rank+1, rank+1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -211,14 +195,15 @@ static void sort(const int rank, const int size, int *nums, const int n){
             }
         }
         MPI_Barrier(MPI_COMM_WORLD);
-
+        not_sorted = check(rank,size,local_buffer,n);
+        if(rank==MASTER){
+            MPI_Bcast(&not_sorted, 1, MPI_INTEGER, MASTER, MPI_COMM_WORLD);
+        }
     }
-    MPI_Gather;
-
-
     free(recv_buffer);
     free(local_buffer);
     free(merge_buffer);
+
 }
 
 
@@ -245,6 +230,7 @@ static int check(const int rank, const int size, const int *nums, const int n)
     }
     return 0;
 }
+
 
 int main(int argc, char **argv)
 {
