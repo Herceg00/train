@@ -108,7 +108,7 @@ static void min_max(const int *nums, const int n, int *min, int *max)
     }
 }
 
-static void merge(const int *a, const int *b, int *c,int size_a, int size_b){
+static void merge(const int *c, const int *a, const int *b,int size_a, int size_b){
     int i1=0,i2=0;
     for( int i =0;i<size_a+size_b;i++){
         if((i2 == size_b) || (i1!=size_a && a[i1] < b[i2])) {
@@ -154,8 +154,8 @@ static void sort(const int rank, const int size, int *nums, const int n){
 
     short sorted = 0;
 
-    while() {
-        if(rank % 2 == 1){
+    while(!sorted) {
+        if((rank % 2 == 1)&&(rank!=size-1)) {
             MPI_Send(&local_buffer[n-1], 1, MPI_INTEGER, rank+1, rank, MPI_COMM_WORLD);
             MPI_Recv(&flag_to_change, 1, MPI_INTEGER, rank+1, rank+1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             if(flag_to_change == 1){
@@ -163,21 +163,23 @@ static void sort(const int rank, const int size, int *nums, const int n){
                 MPI_Recv(local_buffer, n, MPI_INTEGER, rank+1, rank+1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
 
-        } else {
-            MPI_Recv(&test_element, 1, MPI_INTEGER, rank, rank-1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            if(test_element > local_buffer[0]){
-                flag_to_change = 1;
-                MPI_Send(&flag_to_change, 1, MPI_INTEGER, rank-1, rank, MPI_COMM_WORLD);
+        } else{
+            if(rank!=size-1) {
+                MPI_Recv(&test_element, 1, MPI_INTEGER, rank, rank - 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if (test_element > local_buffer[0]) {
+                    flag_to_change = 1;
+                    MPI_Send(&flag_to_change, 1, MPI_INTEGER, rank - 1, rank, MPI_COMM_WORLD);
 
-            } else{
-                flag_to_change = 0;
-                MPI_Send(&flag_to_change, 1, MPI_INTEGER, rank-1, rank, MPI_COMM_WORLD);
-            }
+                } else {
+                    flag_to_change = 0;
+                    MPI_Send(&flag_to_change, 1, MPI_INTEGER, rank - 1, rank, MPI_COMM_WORLD);
+                }
 
-            if(flag_to_change == 1){
-                MPI_Recv(recv_buffer, n, MPI_INTEGER, rank, rank-1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                merge(merge_buffer,local_buffer,recv_buffer,n,n);
-                MPI_Send(merge_buffer, n, MPI_INTEGER, rank-1, rank, MPI_COMM_WORLD);
+                if (flag_to_change == 1) {
+                    MPI_Recv(recv_buffer, n, MPI_INTEGER, rank, rank - 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    merge(merge_buffer, local_buffer, recv_buffer, n, n);
+                    MPI_Send(merge_buffer, n, MPI_INTEGER, rank - 1, rank, MPI_COMM_WORLD);
+                }
             }
         }
         MPI_Barrier(MPI_COMM_WORLD);
@@ -204,7 +206,7 @@ static void sort(const int rank, const int size, int *nums, const int n){
 
             if(flag_to_change == 1){
                 MPI_Recv(recv_buffer, n, MPI_INTEGER, rank, rank-1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                merge();
+                merge(merge_buffer,local_buffer,recv_buffer,n,n);
                 MPI_Send(merge_buffer, n, MPI_INTEGER, rank-1, rank, MPI_COMM_WORLD);
             }
         }
