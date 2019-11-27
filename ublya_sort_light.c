@@ -77,6 +77,27 @@ static void merge(int *c, const int *a, const int *b, int size_a, int size_b) {
         }
     }
 }
+static int check(const int rank, const int size, const int *nums, const int n) {
+    if (!is_sorted(nums, n)) {
+        return -1;
+    }
+    int pair[2];
+    min_max(nums, n, pair, &pair[1]);
+    int *buf = NULL;
+    if (rank == MASTER) {
+        buf = malloc(2 * size * sizeof(int));
+        if (buf == NULL) {
+            return -2;
+        }
+    }
+    MPI_Gather(pair, 2, MPI_INTEGER, buf, 2, MPI_INTEGER, MASTER, MPI_COMM_WORLD);
+    if (rank == MASTER) {
+        int rc = is_sorted(buf, 2 * size);
+        free(buf);
+        return rc == 0;
+    }
+    return 0;
+}
 
 
 static void sort(const int rank, const int size, int *nums, const int n) {
@@ -117,7 +138,7 @@ static void sort(const int rank, const int size, int *nums, const int n) {
             MPI_Recv(recv_buffer, n, MPI_INTEGER, rank, rank - 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             merge(merge_buffer, local_buffer, recv_buffer, n, n);
             MPI_Send(merge_buffer, n, MPI_INTEGER, rank - 1, rank, MPI_COMM_WORLD);
-            for(int i=0;i<n;i++){ //try to change to memset
+            for(int i=0;i<n;i++){
                 local_buffer[i] = merge_buffer[n+i];
             }
         }
@@ -135,27 +156,6 @@ static void sort(const int rank, const int size, int *nums, const int n) {
 }
 
 
-static int check(const int rank, const int size, const int *nums, const int n) {
-    if (!is_sorted(nums, n)) {
-        return -1;
-    }
-    int pair[2];
-    min_max(nums, n, pair, &pair[1]);
-    int *buf = NULL;
-    if (rank == MASTER) {
-        buf = malloc(2 * size * sizeof(int));
-        if (buf == NULL) {
-            return -2;
-        }
-    }
-    MPI_Gather(pair, 2, MPI_INTEGER, buf, 2, MPI_INTEGER, MASTER, MPI_COMM_WORLD);
-    if (rank == MASTER) {
-        int rc = is_sorted(buf, 2 * size);
-        free(buf);
-        return rc == 0;
-    }
-    return 0;
-}
 
 
 int main(int argc, char **argv) {
