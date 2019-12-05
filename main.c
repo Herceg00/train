@@ -108,9 +108,9 @@ int main(int argc, char **argv) {
             index = (i/blocks_per_dimension)*block_length*matrix_size + (i%blocks_per_dimension) * block_length;
 
             MPI_Send(&A[index],
-                     block_length * block_length / number_of_blocks, block, i, a_tag, MPI_COMM_WORLD);
+                     block_length * block_length, block, i, a_tag, MPI_COMM_WORLD);
             MPI_Send(&B[index],
-                     block_length * block_length / number_of_blocks, block, i, b_tag, MPI_COMM_WORLD);
+                     block_length * block_length, block, i, b_tag, MPI_COMM_WORLD);
         }
     }
     MPI_Recv(block_A, block_length * block_length, block, MASTER, a_tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
