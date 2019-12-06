@@ -102,7 +102,7 @@ void definite_scheme_first_second(int tau_steps,int h_steps, double a){
     psi2 = (double*)calloc(tau_steps,sizeof(double));
     for(int i = 0;i<tau_steps;i++){
         fi1[i] = u(0,i*tau);
-        psi2[i] = u(1,i*tau);
+        psi2[i] = du_dx(1,i*tau);
     }
     double **grid = (double**) calloc(sizeof(double *),2);
     grid[0] = (double*) calloc(h_steps,sizeof(double));
@@ -123,7 +123,7 @@ void definite_scheme_second_first(int tau_steps,int h_steps, double a){
     psi1 = (double*)calloc(tau_steps, sizeof(double));
     fi2 = (double*)calloc(tau_steps,sizeof(double));
     for(int i = 0;i<tau_steps;i++){
-        psi1[i] = u(0,i*tau);
+        psi1[i] = du_dx(0,i*tau);
         fi2[i] = u(1,i*tau);
     }
     double **grid = (double**) calloc(sizeof(double *),2);
