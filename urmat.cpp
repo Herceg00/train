@@ -39,7 +39,7 @@ int main(int argc,char** argv) {
 //h_steps = grid dimension on OX coordinate
 //tau_steps = grid gimaension on OY coordinate
 
-void definite_scheme_first_first(int tau_steps,int h_steps){
+void definite_scheme_first_first(int tau_steps,int h_steps, double a){
 
     //DOING INITIAIZATION
 
@@ -51,13 +51,17 @@ void definite_scheme_first_first(int tau_steps,int h_steps){
     for(int i = 0;i<tau_steps;i++){
         fi1[i] = u(0,i*tau);
         fi2[i] = u(1,i*tau);
-        
     }
     double **grid = (double**) calloc(sizeof(double *),2);
     grid[0] = (double*) calloc(h_steps,sizeof(double));
     grid[1] = (double*) calloc(h_steps, sizeof(double));
     for(int i = 0;i<h_steps;i++){
         grid[0][i] = u(i*h,0);
+    }
+    for (int i =1;i<tau_steps;i++){
+        get_next_step_def(grid[i-1],grid[i],a,tau,h,(i-1)*tau,h_steps);
+        grid[i][0] = fi1[i];
+        grid[i][h_steps - 1] = fi2[i];
     }
 
 
