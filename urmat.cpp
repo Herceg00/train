@@ -16,7 +16,11 @@ double u(double x, double t){
 double f(double x, double t){
     return 0;
     //tutor function
+}
 
+double du_dx(double x, double t){
+    return 0;
+    //tutor function
 }
 
 //prev_tau is used to calculate f(X_i,prev_tau)
@@ -34,6 +38,8 @@ double get_next_step_def(double *prev_layer,double *cur_layer,double a,double ta
 int main(int argc,char** argv) {
     int tau_steps = atoi(argv[1]);
     //doing only test mode now
+
+
 }
 
 //h_steps = grid dimension on OX coordinate
@@ -63,14 +69,77 @@ void definite_scheme_first_first(int tau_steps,int h_steps, double a){
         grid[i][0] = fi1[i];
         grid[i][h_steps - 1] = fi2[i];
     }
+}
 
-
-
-    //INITIALIZATION DONE
-
-
-
-
+void definite_scheme_second_second(int tau_steps,int h_steps, double a){
+    double tau = 1.0/tau_steps; //atomic steps for every dimension
+    double h = 1.0/h_steps;
+    double *psi1,*psi2;
+    psi1 = (double*)calloc(tau_steps, sizeof(double));
+    psi2 = (double*)calloc(tau_steps,sizeof(double));
+    for(int i = 0;i<tau_steps;i++){
+        psi1[i] = du_dx(0,i*tau);
+        psi2[i] = du_dx(1,i*tau);
+    }
+    double **grid = (double**) calloc(sizeof(double *),2);
+    grid[0] = (double*) calloc(h_steps,sizeof(double));
+    grid[1] = (double*) calloc(h_steps, sizeof(double));
+    for(int i = 0;i<h_steps;i++){
+        grid[0][i] = u(i*h,0);
+    }
+    for (int i =1;i<tau_steps;i++){
+        get_next_step_def(grid[i-1],grid[i],a,tau,h,(i-1)*tau,h_steps);
+        grid[i][0] = (psi1[i]*2*h + grid[i][2] -4*grid[i][1])/(-3);
+        grid[i][h_steps - 1] = (psi2[i]*2*h - grid[i][h_steps-3] + 4*grid[i][h_steps -2])/3;
+    }
 
 }
+void definite_scheme_first_second(int tau_steps,int h_steps, double a){
+    double tau = 1.0/tau_steps; //atomic steps for every dimension
+    double h = 1.0/h_steps;
+    double *fi1,*psi2;
+    fi1 = (double*)calloc(tau_steps, sizeof(double));
+    psi2 = (double*)calloc(tau_steps,sizeof(double));
+    for(int i = 0;i<tau_steps;i++){
+        fi1[i] = u(0,i*tau);
+        psi2[i] = u(1,i*tau);
+    }
+    double **grid = (double**) calloc(sizeof(double *),2);
+    grid[0] = (double*) calloc(h_steps,sizeof(double));
+    grid[1] = (double*) calloc(h_steps, sizeof(double));
+    for(int i = 0;i<h_steps;i++){
+        grid[0][i] = u(i*h,0);
+    }
+    for (int i =1;i<tau_steps;i++){
+        get_next_step_def(grid[i-1],grid[i],a,tau,h,(i-1)*tau,h_steps);
+        grid[i][0] = fi1[i];
+        grid[i][h_steps - 1] = (psi2[i]*2*h - grid[i][h_steps-3] + 4*grid[i][h_steps -2])/3;
+    }
+}
+void definite_scheme_second_first(int tau_steps,int h_steps, double a){
+    double tau = 1.0/tau_steps; //atomic steps for every dimension
+    double h = 1.0/h_steps;
+    double *psi1,*fi2;
+    psi1 = (double*)calloc(tau_steps, sizeof(double));
+    fi2 = (double*)calloc(tau_steps,sizeof(double));
+    for(int i = 0;i<tau_steps;i++){
+        psi1[i] = u(0,i*tau);
+        fi2[i] = u(1,i*tau);
+    }
+    double **grid = (double**) calloc(sizeof(double *),2);
+    grid[0] = (double*) calloc(h_steps,sizeof(double));
+    grid[1] = (double*) calloc(h_steps, sizeof(double));
+    for(int i = 0;i<h_steps;i++){
+        grid[0][i] = u(i*h,0);
+    }
+    for (int i =1;i<tau_steps;i++){
+        get_next_step_def(grid[i-1],grid[i],a,tau,h,(i-1)*tau,h_steps);
+        grid[i][0] = (psi1[i]*2*h + grid[i][2] -4*grid[i][1])/(-3);
+        grid[i][h_steps - 1] = fi2[i];
+    }
+}
+
+
+
+
 
