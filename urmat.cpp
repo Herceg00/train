@@ -85,14 +85,15 @@ void indefinite_scheme_first_first(int tau_steps, int h_steps, double a) {
     alpha[0] = 0;
     for (int i = 1; i < tau_steps + 1; i++) { //i = заполняем этот уровень, стоим на i-1
         betta[0] = fi1[i];
-        for (int j = 1; j < h_steps; j++) {
+        for (int j = 1; j < h_steps + 1 ; j++) { //заполняем прогоночные коэффициенты
             alpha[j] = B_i / (C_i - alpha[j - 1] * A_i);
             betta[j] = (A_i * betta[j - 1] + ((grid[(i - 1) % 2][j]) / tau + f(j * h, i * tau))) /
                        (C_i - alpha[i - 1] * A_i);
         }
-        grid[(i % 2)][h_steps - 1] = (fi2[i]);
-        for (int j = h_steps - 2; j > -1; j--) {
-            grid[i % 2][j] = alpha[j + 1] * grid[i % 2][j + 1] + betta[i + 1];
+        bool grid_layer = i%2;
+        grid[grid_layer][h_steps] = fi2[i];
+        for (int j = h_steps - 1; j > -1; j--) {
+            grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[i + 1];
         }
     }
 }
@@ -112,27 +113,25 @@ void indefinite_scheme_second_first(int tau_steps, int h_steps, double a) {
 
 
 void definite_scheme_first_first(int tau_steps, int h_steps, double a) {
-
-    //DOING INITIAIZATION
-    double tau = 1.0 / tau_steps; //atomic steps for every dimension
+    double tau = 1.0 / tau_steps;
     double h = 1.0 / h_steps;
     double *fi1, *fi2;
-    fi1 = (double *) calloc(tau_steps, sizeof(double));
-    fi2 = (double *) calloc(tau_steps, sizeof(double));
-    for (int i = 0; i < tau_steps; i++) {
+    fi1 = (double *) calloc(tau_steps+1, sizeof(double));
+    fi2 = (double *) calloc(tau_steps+1, sizeof(double));
+    for (int i = 0; i < tau_steps+1; i++) {
         fi1[i] = u(0, i * tau);
         fi2[i] = u(1, i * tau);
     }
     double **grid = (double **) calloc(sizeof(double *), 2);
-    grid[0] = (double *) calloc(h_steps, sizeof(double));
-    grid[1] = (double *) calloc(h_steps, sizeof(double));
-    for (int i = 0; i < h_steps; i++) {
+    grid[0] = (double *) calloc(h_steps+1, sizeof(double));
+    grid[1] = (double *) calloc(h_steps+1, sizeof(double));
+    for (int i = 0; i < h_steps+1; i++) { //начальная инициализация нулевого слоя
         grid[0][i] = u(i * h, 0);
     }
-    for (int i = 1; i < tau_steps; i++) {
-        get_next_step_def(grid[i - 1], grid[i], a, tau, h, (i - 1) * tau, h_steps);
-        grid[i][0] = fi1[i];
-        grid[i][h_steps - 1] = fi2[i];
+    for (int i = 1; i < tau_steps+1; i++) { //делаем i - ый слой по нижележащему
+        get_next_step_def(grid[(i - 1)%2], grid[i%2], a, tau, h, (i - 1) * tau, h_steps);
+        grid[i%2][0] = fi1[i];
+        grid[i%2][h_steps] = fi2[i];
     }
 }
 
@@ -140,22 +139,22 @@ void definite_scheme_second_second(int tau_steps, int h_steps, double a) {
     double tau = 1.0 / tau_steps; //atomic steps for every dimension
     double h = 1.0 / h_steps;
     double *psi1, *psi2;
-    psi1 = (double *) calloc(tau_steps, sizeof(double));
-    psi2 = (double *) calloc(tau_steps, sizeof(double));
-    for (int i = 0; i < tau_steps; i++) {
+    psi1 = (double *) calloc(tau_steps+1, sizeof(double));
+    psi2 = (double *) calloc(tau_steps+1, sizeof(double));
+    for (int i = 0; i < tau_steps+1; i++) {
         psi1[i] = du_dx(0, i * tau);
         psi2[i] = du_dx(1, i * tau);
     }
     double **grid = (double **) calloc(sizeof(double *), 2);
-    grid[0] = (double *) calloc(h_steps, sizeof(double));
-    grid[1] = (double *) calloc(h_steps, sizeof(double));
+    grid[0] = (double *) calloc(h_steps+1, sizeof(double));
+    grid[1] = (double *) calloc(h_steps+1, sizeof(double));
     for (int i = 0; i < h_steps; i++) {
         grid[0][i] = u(i * h, 0);
     }
-    for (int i = 1; i < tau_steps; i++) {
-        get_next_step_def(grid[i - 1], grid[i], a, tau, h, (i - 1) * tau, h_steps);
-        grid[i][0] = (psi1[i] * 2 * h + grid[i][2] - 4 * grid[i][1]) / (-3);
-        grid[i][h_steps - 1] = (psi2[i] * 2 * h - grid[i][h_steps - 3] + 4 * grid[i][h_steps - 2]) / 3;
+    for (int i = 1; i < tau_steps+1; i++) {
+        get_next_step_def(grid[(i - 1)%2], grid[i%2], a, tau, h, (i - 1) * tau, h_steps);
+        grid[i%2][0] = (psi1[i] * 2 * h + grid[i%2][2] - 4 * grid[i%2][1]) / (-3);
+        grid[i%2][h_steps - 1] = (psi2[i] * 2 * h - grid[i%2][h_steps - 3] + 4 * grid[i%2][h_steps - 2]) / 3;
     }
 
 }
