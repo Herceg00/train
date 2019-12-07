@@ -46,8 +46,9 @@ int main(int argc,char** argv) {
 //h_steps = grid dimension on OX coordinate
 //tau_steps = grid gimaension on OY coordinate
 
+//неявная схема 1_1
 void indefinite_scheme_first_first(int tau_steps,int h_steps, double a){
-    double tau = 1.0/tau_steps; //atomic steps for every dimension
+    double tau = 1.0/tau_steps; //шаги сетки
     double h = 1.0/h_steps;
     double *fi1,*fi2;
     fi1 = (double*)calloc(tau_steps, sizeof(double));
@@ -62,17 +63,18 @@ void indefinite_scheme_first_first(int tau_steps,int h_steps, double a){
     for(int i = 0;i<h_steps;i++){
         grid[0][i] = u(i*h,0);
     }
-    //this values are constant for the whole scheme
+    //одинаковые значения для всей сетки
     double A_i = a*a/h*h;
     double B_i = a*a/h*h;
     double C_i = 2*a*a/h*h + 1/tau;
 
+    //краевые условия
     double hi_1 = 0;
     double mu_1;
     double mu_2;
     double hi_2 = 0;
 
-    //Прогоночные коэффициенты
+    //массивы из прогоночных коэффициентов
     double *alpha,*betta;
     alpha = (double*)calloc(h_steps, sizeof(double));
     betta = (double*)calloc(h_steps, sizeof(double));
