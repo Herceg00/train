@@ -1,50 +1,60 @@
 #include <iostream>
-#include "math.h"
+//#include "math.h"
+#include <cmath>
 #include "stdio.h"
 #include "assert.h"
 #include "stdlib.h"
 #include "string.h"
-#include "cublas.h"
-#include "/usr/local/cuda-10.1/include/cuda_runtime.h"
 
+double get_a2() {
+    return 4.0;
+}
 
 double u(double x, double t) {
-    return 0;
-    //tutor function
-
+    return (t * t + 1) * x - 1 + 2 / (25 * M_PI * M_PI)
+                                 * (1 - pow(M_E, -25 * M_PI * M_PI * t)) * cos(5 * M_PI / 2 * x);
 }
 
 double f(double x, double t) {
     return 0;
-    //tutor function
 }
 
-double du_dx(double x, double t) {
-    return 0;
-    //tutor function
+double u_0(double x,double t) {
+    return x - 1.0;
 }
+
+double fi_1(double x,double t) {
+    return 0.0;
+}
+
+double fi_2(double x,double t) {
+    return t * t;
+}
+
+double psi_1(double x,double t) {
+    return t * t + 1;
+}
+
+double psi_2(double x,double t) {
+    return 0.0;
+}
+
 
 //prev_tau is used to calculate f(X_i,prev_tau)
 
 double
 get_next_step_def(double *prev_layer, double *cur_layer, double a, double tau, double h, double prev_tau, int h_steps) {
-    for (int i = 1; i < h_steps - 1; i++) {
-
-        cur_layer[i] = (tau * a * a * (prev_layer[i - 1] - 2 * prev_layer[i] + prev_layer[i + 1])) / (h * h) +
-                       f(i * h, prev_tau) + prev_layer[i];
+    for (int i = 1; i < h_steps ; i++) {
+        double op1 = prev_layer[i] + f(i*h,prev_tau) * tau;
+        double op2 = tau/(h*h);
+        double op3 = prev_layer[i-1]+prev_layer[i+1] - 2*prev_layer[i];
+        cur_layer[i] = op1 + op2*op3;
+        printf("%d:  %f %f %f ___%f\n",i,op1,op2,op3,cur_layer[i]);
     }
 
 }
 
-
-int main(int argc, char **argv) {
-    int tau_steps = atoi(argv[1]); //чему равно N, то есть всего точек, начиная с 0, N+1
-    int h_steps = atoi(argv[2]); //чему равно M, то есть всего точек, начиная с 0, M+1
-    //doing only test mode now
-
-
-}
-
+/*
 //h_steps + 1 - количество точек на сетке по координате OX
 //tau_steps + 1 - количество точек на сетке по координате OY
 
@@ -56,14 +66,14 @@ void indefinite_scheme_first_first(int tau_steps, int h_steps, double a) {
     fi1 = (double *) calloc(tau_steps + 1, sizeof(double));
     fi2 = (double *) calloc(tau_steps + 1, sizeof(double));
     for (int i = 0; i < tau_steps + 1; i++) {
-        fi1[i] = u(0, i * tau);
-        fi2[i] = u(1, i * tau); //массивы из краевых условий
+        fi1[i] = fi_1(0,i*tau);
+        fi2[i] = fi_2(1, i * tau); //массивы из краевых условий
     }
     double **grid = (double **) calloc(sizeof(double *), 2);
     grid[0] = (double *) calloc(h_steps + 1, sizeof(double));
     grid[1] = (double *) calloc(h_steps + 1, sizeof(double));
     for (int i = 0; i < h_steps + 1; i++) {
-        grid[0][i] = u(i * h, 0); //задаем нулевой уровень
+        grid[0][i] = u_0(i * h, 0); //задаем нулевой уровень
     }
 
     //одинаковые значения для всей сетки
@@ -97,6 +107,7 @@ void indefinite_scheme_first_first(int tau_steps, int h_steps, double a) {
         }
     }
 }
+
 
 void indefinite_scheme_second(int tau_steps, int h_steps, double a) {
     double tau = 1.0 / tau_steps; //шаги сетки - величина каждого кусочка
@@ -249,9 +260,9 @@ void indefinite_scheme_second_first(int tau_steps, int h_steps, double a) {
             grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[i + 1];
         }
     }
-    
-}
 
+}
+*/
 
 void definite_scheme_first_first(int tau_steps, int h_steps, double a) {
     double tau = 1.0 / tau_steps;
@@ -260,21 +271,30 @@ void definite_scheme_first_first(int tau_steps, int h_steps, double a) {
     fi1 = (double *) calloc(tau_steps+1, sizeof(double));
     fi2 = (double *) calloc(tau_steps+1, sizeof(double));
     for (int i = 0; i < tau_steps+1; i++) {
-        fi1[i] = u(0, i * tau);
-        fi2[i] = u(1, i * tau);
+        fi1[i] = fi_1(0, i * tau);
+        fi2[i] = fi_2(1, i * tau);
     }
     double **grid = (double **) calloc(sizeof(double *), 2);
     grid[0] = (double *) calloc(h_steps+1, sizeof(double));
     grid[1] = (double *) calloc(h_steps+1, sizeof(double));
     for (int i = 0; i < h_steps+1; i++) { //начальная инициализация нулевого слоя
-        grid[0][i] = u(i * h, 0);
+        grid[0][i] = u_0(i*h,0);
     }
     for (int i = 1; i < tau_steps+1; i++) { //делаем i - ый слой по нижележащему
-        get_next_step_def(grid[(i - 1)%2], grid[i%2], a, tau, h, (i - 1) * tau, h_steps);
+        get_next_step_def(grid[(i + 1)%2], grid[i%2], a*a, tau, h, (i) * tau, h_steps);
         grid[i%2][0] = fi1[i];
         grid[i%2][h_steps] = fi2[i];
     }
+
+    double sum =0;
+    for(int i = 0;i<h_steps+1;i++){
+        double diff = u(i*h,1.0) - grid[tau_steps%2][i];
+        sum+=(diff*diff);
+    }
+    printf("%lf",sum);
 }
+
+
 
 void definite_scheme_second_second(int tau_steps, int h_steps, double a) {
     double tau = 1.0 / tau_steps; //atomic steps for every dimension
@@ -283,13 +303,13 @@ void definite_scheme_second_second(int tau_steps, int h_steps, double a) {
     psi1 = (double *) calloc(tau_steps+1, sizeof(double));
     psi2 = (double *) calloc(tau_steps+1, sizeof(double));
     for (int i = 0; i < tau_steps+1; i++) {
-        psi1[i] = du_dx(0, i * tau);
-        psi2[i] = du_dx(1, i * tau);
+        psi1[i] = psi_1(0, i * tau);
+        psi2[i] = psi_2(1, i * tau);
     }
     double **grid = (double **) calloc(sizeof(double *), 2);
     grid[0] = (double *) calloc(h_steps+1, sizeof(double));
     grid[1] = (double *) calloc(h_steps+1, sizeof(double));
-    for (int i = 0; i < h_steps; i++) {
+    for (int i = 0; i < h_steps + 1; i++) {
         grid[0][i] = u(i * h, 0);
     }
     for (int i = 1; i < tau_steps+1; i++) {
@@ -297,8 +317,15 @@ void definite_scheme_second_second(int tau_steps, int h_steps, double a) {
         grid[i%2][0] = (psi1[i] * 2 * h + grid[i%2][2] - 4 * grid[i%2][1]) / (-3);
         grid[i%2][h_steps] = (psi2[i] * 2 * h - grid[i%2][h_steps - 2] + 4 * grid[i%2][h_steps - 1]) / 3;
     }
-
+    double sum =0;
+    for(int i = 0;i<h_steps+1;i++){
+        double diff = u(1.0,i*h) - grid[tau_steps%2][i];
+        sum+=(diff*diff);
+    }
+    printf("%lf",sum);
 }
+
+
 
 void definite_scheme_first_second(int tau_steps, int h_steps, double a) {
     double tau = 1.0 / tau_steps; //atomic steps for every dimension
@@ -307,8 +334,8 @@ void definite_scheme_first_second(int tau_steps, int h_steps, double a) {
     fi1 = (double *) calloc(tau_steps+1, sizeof(double));
     psi2 = (double *) calloc(tau_steps+1, sizeof(double));
     for (int i = 0; i < tau_steps+1; i++) {
-        fi1[i] = u(0, i * tau);
-        psi2[i] = du_dx(1, i * tau);
+        fi1[i] = fi_1(0, i * tau);
+        psi2[i] = psi_2(1, i * tau);
     }
     double **grid = (double **) calloc(sizeof(double *), 2);
     grid[0] = (double *) calloc(h_steps+1, sizeof(double));
@@ -321,7 +348,15 @@ void definite_scheme_first_second(int tau_steps, int h_steps, double a) {
         grid[i%2][0] = fi1[i];
         grid[i%2][h_steps] = (psi2[i] * 2 * h - grid[i%2][h_steps - 2] + 4 * grid[i%2][h_steps - 1]) / 3;
     }
+    double sum =0;
+    for(int i = 0;i<h_steps+1;i++){
+        double diff = u(1.0,i*h) - grid[tau_steps%2][i];
+        sum+=(diff*diff);
+    }
+    printf("%lf",sum);
 }
+
+
 
 void definite_scheme_second_first(int tau_steps, int h_steps, double a) {
     double tau = 1.0 / tau_steps; //atomic steps for every dimension
@@ -330,8 +365,8 @@ void definite_scheme_second_first(int tau_steps, int h_steps, double a) {
     psi1 = (double *) calloc(tau_steps+1, sizeof(double));
     fi2 = (double *) calloc(tau_steps+1, sizeof(double));
     for (int i = 0; i < tau_steps+1; i++) {
-        psi1[i] = du_dx(0, i * tau);
-        fi2[i] = u(1, i * tau);
+        psi1[i] = psi_1(0, i * tau);
+        fi2[i] = fi_2(1, i * tau);
     }
     double **grid = (double **) calloc(sizeof(double *), 2);
     grid[0] = (double *) calloc(h_steps+1, sizeof(double));
@@ -344,6 +379,22 @@ void definite_scheme_second_first(int tau_steps, int h_steps, double a) {
         grid[i%2][0] = (psi1[i] * 2 * h + grid[i%2][2] - 4 * grid[i%2][1]) / (-3);
         grid[i%2][h_steps] = fi2[i];
     }
+    double sum =0;
+    for(int i = 0;i<h_steps+1;i++){
+        double diff = u(1.0,i*h) - grid[tau_steps%2][i];
+        sum+=(diff*diff);
+    }
+    printf("%lf",sum);
+}
+
+int main(int argc, char **argv) {
+    int tau_steps = atoi(argv[1]); //чему равно N, то есть всего точек, начиная с 0, N+1
+    int h_steps = atoi(argv[2]); //чему равно M, то есть всего точек, начиная с 0, M+1
+    //doing only test mode now
+    definite_scheme_first_first(tau_steps,h_steps,1);
+    //definite_scheme_second_second(tau_steps,h_steps,1);
+    //definite_scheme_first_second(tau_steps,h_steps,1);
+    //definite_scheme_second_first(tau_steps,h_steps,1);
 }
 
 
