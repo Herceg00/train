@@ -101,7 +101,7 @@ void indefinite_scheme_first_first(int tau_steps, int h_steps, double a) {
         bool grid_layer = i%2;
         grid[grid_layer][h_steps] = fi2[i];
         for (int j = h_steps - 1; j > -1; j--) {
-            grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[i + 1];
+            grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[j + 1];
         }
     }
 
@@ -113,6 +113,10 @@ void indefinite_scheme_first_first(int tau_steps, int h_steps, double a) {
     sum = sum*h;
     sum = sqrt(sum);
     printf("%lf",sum);
+    free(alpha);
+    free(betta);
+    free(fi1);
+    free(fi2);
 }
 
 
@@ -162,7 +166,7 @@ void indefinite_scheme_second(int tau_steps, int h_steps, double a) {
         int grid_layer = i%2;
         grid[grid_layer][h_steps] = ((mu_2+hi_2*betta[h_steps])/(1 - hi_2*alpha[h_steps]));
         for (int j = h_steps - 1; j > -1; j--) {
-            grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[i + 1];
+            grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[j + 1];
         }
     }
 
@@ -174,6 +178,10 @@ void indefinite_scheme_second(int tau_steps, int h_steps, double a) {
     sum = sum*h;
     sum = sqrt(sum);
     printf("%lf",sum);
+    free(alpha);
+    free(betta);
+    free(psi1);
+    free(psi2);
 }
 
 void indefinite_scheme_first_second(int tau_steps, int h_steps, double a) {
@@ -222,7 +230,7 @@ void indefinite_scheme_first_second(int tau_steps, int h_steps, double a) {
         int grid_layer = i%2;
         grid[grid_layer][h_steps] = ((mu_2+hi_2*betta[h_steps])/(1 - hi_2*alpha[h_steps]));
         for (int j = h_steps - 1; j > -1; j--) {
-            grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[i + 1];
+            grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[j + 1];
         }
     }
     double sum =0;
@@ -233,6 +241,10 @@ void indefinite_scheme_first_second(int tau_steps, int h_steps, double a) {
     sum = sum*h;
     sum = sqrt(sum);
     printf("%lf",sum);
+    free(alpha);
+    free(betta);
+    free(psi2);
+    free(fi1);
 
 }
 
@@ -249,6 +261,7 @@ void indefinite_scheme_second_first(int tau_steps, int h_steps, double a) {
     double **grid = (double **) calloc(sizeof(double *), 2);
     grid[0] = (double *) calloc(h_steps + 1, sizeof(double));
     grid[1] = (double *) calloc(h_steps + 1, sizeof(double));
+
     for (int i = 0; i < h_steps + 1; i++) {
         grid[0][i] = u(i * h, 0); //задаем нулевой уровень
     }
@@ -278,10 +291,10 @@ void indefinite_scheme_second_first(int tau_steps, int h_steps, double a) {
             alpha[j] = B_i / temp;
             betta[j] = (A_i * betta[j - 1] + ((grid[(i - 1) % 2][j]) + f(j * h, i * tau)*tau)) / temp;
         }
-        bool grid_layer = i%2;
+        int grid_layer = i%2;
         grid[grid_layer][h_steps] = fi2[i];
         for (int j = h_steps - 1; j > -1; j--) {
-            grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[i + 1];
+            grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[j + 1];
         }
     }
     double sum =0;
@@ -292,6 +305,13 @@ void indefinite_scheme_second_first(int tau_steps, int h_steps, double a) {
     sum = sum*h;
     sum = sqrt(sum);
     printf("%lf",sum);
+    free(alpha);
+    free(betta);
+    free(psi1);
+    free(fi2);
+    free(grid[0]);
+    free(grid[1]);
+    free(grid);
 
 }
 
@@ -435,10 +455,10 @@ int main(int argc, char **argv) {
     //definite_scheme_second_second(tau_steps,h_steps,2);
     //definite_scheme_first_second(tau_steps,h_steps,2);
     //definite_scheme_second_first(tau_steps,h_steps,2);
-    //indefinite_scheme_first_first(tau_steps,h_steps,2);
+    indefinite_scheme_first_first(tau_steps,h_steps,2);
     //indefinite_scheme_second(tau_steps,h_steps,2);
     //indefinite_scheme_first_second(tau_steps,h_steps,2);
-    indefinite_scheme_second_first(tau_steps,h_steps,2);
+    //indefinite_scheme_second_first(tau_steps,h_steps,2);
 
 }
 
