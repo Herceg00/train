@@ -99,13 +99,13 @@ indefinite_scheme_first_first(int tau_steps, int h_steps, double a, double **gri
         }
         if (mode == 1) {
             if (i == graph_null) {
-                cur1 = grid[i % 2];
+                memcpy(cur1,grid[i%2],h_steps+1);
             }
             if (i == graph_null * 2) {
-                cur2 = grid[i % 2];
+                memcpy(cur2,grid[i%2],h_steps+1);
             }
             if (i == graph_null * 3) {
-                cur3 = grid[i % 2];
+                memcpy(cur3,grid[i%2],h_steps+1);
             }
         }
     }
@@ -341,7 +341,6 @@ definite_scheme_second_second(int tau_steps, int h_steps, double a, double **gri
     }
     for (int i = 1; i < tau_steps + 1; i++) {
         get_next_step_def(grid[(i + 1) % 2], grid[i % 2], a, tau, h, (i) * tau, h_steps);
-
         grid[i % 2][0] = (psi1[i] * 2 * h + grid[i % 2][2] - 4 * grid[i % 2][1]) / (-3);
         grid[i % 2][h_steps] = (psi2[i] * 2 * h - grid[i % 2][h_steps - 2] + 4 * grid[i % 2][h_steps - 1]) / 3;
         if (mode == 1) {
@@ -375,7 +374,7 @@ definite_scheme_first_second(int tau_steps, int h_steps, double a, double **grid
         psi2[i] = psi_2(1, i * tau);
     }
     for (int i = 1; i < tau_steps + 1; i++) {
-        get_next_step_def(grid[(i - 1) % 2], grid[i % 2], a, tau, h, (i - 1) * tau, h_steps);
+        get_next_step_def(grid[(i - 1) % 2], grid[i % 2], a, tau, h, i * tau, h_steps);
         grid[i % 2][0] = fi1[i];
         grid[i % 2][h_steps] = (psi2[i] * 2 * h - grid[i % 2][h_steps - 2] + 4 * grid[i % 2][h_steps - 1]) / 3;
         if (mode == 1) {
@@ -409,7 +408,7 @@ definite_scheme_second_first(int tau_steps, int h_steps, double a, double **grid
         fi2[i] = fi_2(1, i * tau);
     }
     for (int i = 1; i < tau_steps + 1; i++) {
-        get_next_step_def(grid[(i - 1) % 2], grid[i % 2], a, tau, h, (i - 1) * tau, h_steps);
+        get_next_step_def(grid[(i - 1) % 2], grid[i % 2], a, tau, h, i  * tau, h_steps);
         grid[i % 2][0] = (psi1[i] * 2 * h + grid[i % 2][2] - 4 * grid[i % 2][1]) / (-3);
         grid[i % 2][h_steps] = fi2[i];
         if (mode == 1) {
