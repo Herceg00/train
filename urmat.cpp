@@ -9,16 +9,15 @@
 
 
 double u(double x, double t) {
-    return (t * t + 1) * x - 1 + 2 / (25 * M_PI * M_PI)
-                                 * (1 - pow(M_E, -25 * M_PI * M_PI * t)) * cos(5 * M_PI / 2 * x);
+    return (1 + (t*t))*sin(M_PI*x)*cos(3*M_PI*x);
 }
 
 double f(double x, double t) {
-    return 0;
+    return sin(M_PI*x)*cos(3*M_PI*x)*2*t + (1+t*t)*(10*M_PI*M_PI*sin(M_PI*x)*cos(3*M_PI*x) + 6*M_PI*M_PI*cos(M_PI*x)*sin(3*M_PI*x));
 }
 
 double u_0(double x, double t) {
-    return x - 1.0;
+    return sin(M_PI*x)*cos(3*M_PI*x);
 }
 
 double fi_1(double x, double t) {
@@ -26,30 +25,30 @@ double fi_1(double x, double t) {
 }
 
 double fi_2(double x, double t) {
-    return t * t;
+    return 0.0;
 }
 
 double psi_1(double x, double t) {
-    return t * t + 1;
+    return M_PI*(1+t*t);
+    //return 0;
 }
 
 double psi_2(double x, double t) {
-    return 0.0;
+    return M_PI*(1+t*t);
+    //return 0;
 }
 
 
 //prev_tau is used to calculate f(X_i,prev_tau)
 
-double
+void
 get_next_step_def(double *prev_layer, double *cur_layer, double a, double tau, double h, double prev_tau, int h_steps) {
     for (int i = 1; i < h_steps; i++) {
         double op1 = prev_layer[i] + f(i * h, prev_tau) * tau;
         double op2 = a * a * tau / (h * h);
         double op3 = prev_layer[i - 1] + prev_layer[i + 1] - 2 * prev_layer[i];
         cur_layer[i] = op1 + op2 * op3;
-        //printf("%d:  %f %f %f ___%f\n",i,op1,op2,op3,cur_layer[i]);
     }
-
 }
 
 
@@ -63,8 +62,6 @@ indefinite_scheme_first_first(int tau_steps, int h_steps, double a, double **gri
     double tau = 1.0 / tau_steps; //шаги сетки - величина каждого кусочка
     double h = 1.0 / h_steps;
     double *fi1, *fi2;
-    int graph_interval = h_steps / 4;
-    int graph_null = graph_interval;
     fi1 = (double *) calloc(tau_steps + 1, sizeof(double));
     fi2 = (double *) calloc(tau_steps + 1, sizeof(double));
     for (int i = 0; i < tau_steps + 1; i++) {
@@ -72,9 +69,9 @@ indefinite_scheme_first_first(int tau_steps, int h_steps, double a, double **gri
         fi2[i] = fi_2(1, i * tau); //массивы из краевых условий
     }
     //одинаковые значения для всей сетки
-    double A_i = (a * a * tau) / (h * h);
+    double A_i = ((-1)*a * a * tau) / (h * h);
     double B_i = A_i;
-    double C_i = ((2 * tau * a * a) / (h * h)) + 1;
+    double C_i = (((2 * tau * a * a) / (h * h)) + 1)*(-1);
     //краевые условия
     double hi_1 = 0;
     double mu_1;
@@ -89,24 +86,14 @@ indefinite_scheme_first_first(int tau_steps, int h_steps, double a, double **gri
         betta[1] = fi1[i];
         for (int j = 2; j < h_steps + 1; j++) { //заполняем прогоночные коэффициенты
             double temp = (C_i - alpha[j - 1] * A_i);
+            double F = grid[(i - 1) % 2][j-1] + f((j-1) * h, i * tau) * tau;
             alpha[j] = B_i / temp;
-            betta[j] = (A_i * betta[j - 1] + ((grid[(i - 1) % 2][j]) + f(j * h, i * tau) * tau)) / temp;
+            betta[j] = (A_i * betta[j - 1] - F) / temp;
         }
-        bool grid_layer = i % 2;
+        int grid_layer = i % 2;
         grid[grid_layer][h_steps] = fi2[i];
         for (int j = h_steps - 1; j > -1; j--) {
             grid[grid_layer][j] = alpha[j + 1] * grid[grid_layer][j + 1] + betta[j + 1];
-        }
-        if (mode == 1) {
-            if (i == graph_null) {
-                memcpy(cur1,grid[i%2],h_steps+1);
-            }
-            if (i == graph_null * 2) {
-                memcpy(cur2,grid[i%2],h_steps+1);
-            }
-            if (i == graph_null * 3) {
-                memcpy(cur3,grid[i%2],h_steps+1);
-            }
         }
     }
 
@@ -127,9 +114,9 @@ void indefinite_scheme_second_second(int tau_steps, int h_steps, double a, doubl
         psi2[i] = psi_2(1, i * tau); //массивы из краевых условий
     }
     //одинаковые значения для всей сетки
-    double A_i = (a * a * tau) / (h * h);
+    double A_i = ((-1)*a * a * tau) / (h * h);
     double B_i = A_i;
-    double C_i = ((2 * tau * a * a) / (h * h)) + 1;
+    double C_i = (((2 * tau * a * a) / (h * h)) + 1)*(-1);
 
     //краевые условия
     double hi_1 = 1;
@@ -145,12 +132,13 @@ void indefinite_scheme_second_second(int tau_steps, int h_steps, double a, doubl
     alpha[1] = hi_1;
     for (int i = 1; i < tau_steps + 1; i++) { //i = заполняем этот уровень, стоим на i-1
         mu_1 = (psi1[i] * h * (-1));
-        mu_2 = (psi2[i] * h * (-1));
+        mu_2 = (psi2[i] * h );
         betta[1] = mu_1;
         for (int j = 2; j < h_steps + 1; j++) { //заполняем прогоночные коэффициенты
             double temp = (C_i - alpha[j - 1] * A_i);
+            double F = grid[(i - 1) % 2][j-1] + f((j-1) * h, i * tau) * tau;
             alpha[j] = B_i / temp;
-            betta[j] = (A_i * betta[j - 1] + ((grid[(i - 1) % 2][j]) + f(j * h, i * tau) * tau)) / temp;
+            betta[j] = (A_i * betta[j - 1] - F) / temp;
         }
         int grid_layer = i % 2;
         grid[grid_layer][h_steps] = ((mu_2 + hi_2 * betta[h_steps]) / (1 - hi_2 * alpha[h_steps]));
@@ -187,9 +175,9 @@ void indefinite_scheme_first_second(int tau_steps, int h_steps, double a, double
     }
 
     //одинаковые значения для всей сетки
-    double A_i = (a * a * tau) / (h * h);
+    double A_i = ((-1)*a * a * tau) / (h * h);
     double B_i = A_i;
-    double C_i = ((2 * tau * a * a) / (h * h)) + 1;
+    double C_i = (((2 * tau * a * a) / (h * h)) + 1)*(-1);
 
     //краевые условия
     double hi_1 = 0;
@@ -205,12 +193,13 @@ void indefinite_scheme_first_second(int tau_steps, int h_steps, double a, double
     alpha[1] = hi_1;
     for (int i = 1; i < tau_steps + 1; i++) { //i = заполняем этот уровень, стоим на i-1
         mu_1 = fi1[i];
-        mu_2 = (psi2[i] * h * (-1));
+        mu_2 = (psi2[i] * h );
         betta[1] = mu_1;
         for (int j = 2; j < h_steps + 1; j++) { //заполняем прогоночные коэффициенты
             double temp = (C_i - alpha[j - 1] * A_i);
+            double F = grid[(i - 1) % 2][j-1] + f((j-1) * h, i * tau) * tau;
             alpha[j] = B_i / temp;
-            betta[j] = (A_i * betta[j - 1] + ((grid[(i - 1) % 2][j]) + f(j * h, i * tau) * tau)) / temp;
+            betta[j] = (A_i * betta[j - 1] - F) / temp;
         }
         int grid_layer = i % 2;
         grid[grid_layer][h_steps] = ((mu_2 + hi_2 * betta[h_steps]) / (1 - hi_2 * alpha[h_steps]));
@@ -247,9 +236,9 @@ void indefinite_scheme_second_first(int tau_steps, int h_steps, double a, double
         fi2[i] = u(1, i * tau); //массивы из краевых условий
     }
     //одинаковые значения для всей сетки
-    double A_i = (a * a * tau) / (h * h);
+    double A_i = ((-1)*a * a * tau) / (h * h);
     double B_i = A_i;
-    double C_i = ((2 * tau * a * a) / (h * h)) + 1;
+    double C_i = (((2 * tau * a * a) / (h * h)) + 1)*(-1);
 
     //краевые условия
     double hi_1 = 1;
@@ -265,11 +254,13 @@ void indefinite_scheme_second_first(int tau_steps, int h_steps, double a, double
     alpha[1] = 1;
     for (int i = 1; i < tau_steps + 1; i++) { //i = заполняем этот уровень, стоим на i-1
         mu_1 = (psi1[i] * h * (-1));
+
         betta[1] = mu_1;
         for (int j = 2; j < h_steps + 1; j++) { //заполняем прогоночные коэффициенты
             double temp = (C_i - alpha[j - 1] * A_i);
+            double F = grid[(i - 1) % 2][j-1] + f((j-1) * h, i * tau) * tau;
             alpha[j] = B_i / temp;
-            betta[j] = (A_i * betta[j - 1] + ((grid[(i - 1) % 2][j]) + f(j * h, i * tau) * tau)) / temp;
+            betta[j] = (A_i * betta[j - 1] - F) / temp;
         }
         int grid_layer = i % 2;
         grid[grid_layer][h_steps] = fi2[i];
@@ -308,20 +299,7 @@ definite_scheme_first_first(int tau_steps, int h_steps, double a, double **grid,
         get_next_step_def(grid[(i + 1) % 2], grid[i % 2], a, tau, h, (i) * tau, h_steps);
         grid[i % 2][0] = fi1[i];
         grid[i % 2][h_steps] = fi2[i];
-        if (mode == 1) {
-            if (i == graph_null) {
-                cur1 = grid[i % 2];
-            }
-            if (i == graph_null * 2) {
-                cur2 = grid[i % 2];
-            }
-            if (i == graph_null * 3) {
-                cur3 = grid[i % 2];
-            }
-        }
     }
-
-
 }
 
 
@@ -343,17 +321,6 @@ definite_scheme_second_second(int tau_steps, int h_steps, double a, double **gri
         get_next_step_def(grid[(i + 1) % 2], grid[i % 2], a, tau, h, (i) * tau, h_steps);
         grid[i % 2][0] = (psi1[i] * 2 * h + grid[i % 2][2] - 4 * grid[i % 2][1]) / (-3);
         grid[i % 2][h_steps] = (psi2[i] * 2 * h - grid[i % 2][h_steps - 2] + 4 * grid[i % 2][h_steps - 1]) / 3;
-        if (mode == 1) {
-            if (i == graph_null) {
-                cur1 = grid[i % 2];
-            }
-            if (i == graph_null * 2) {
-                cur2 = grid[i % 2];
-            }
-            if (i == graph_null * 3) {
-                cur3 = grid[i % 2];
-            }
-        }
     }
 
 }
@@ -427,6 +394,8 @@ definite_scheme_second_first(int tau_steps, int h_steps, double a, double **grid
 }
 
 int main(int argc, char **argv) {
+
+
     int tau_steps = atoi(argv[1]);  //чему равно N, то есть всего точек, начиная с 0, N+1
     int h_steps = atoi(argv[2]);    //чему равно M, то есть всего точек, начиная с 0, M+1
     char *mode = argv[3];           // для функций 0 - тестовый режим, 1 - графический
@@ -447,38 +416,39 @@ int main(int argc, char **argv) {
     if (strcmp(mode, "test") == 0) {
         switch (scheme) {
             case 1: {
-                definite_scheme_first_first(tau_steps, h_steps, 2, grid, 0, nullptr, nullptr, nullptr);
+                definite_scheme_first_first(tau_steps, h_steps, 1, grid, 0, nullptr, nullptr, nullptr);
                 break;
             }
             case 2: {
-                definite_scheme_second_second(tau_steps, h_steps, 2, grid, 0, nullptr, nullptr, nullptr);
+                definite_scheme_second_second(tau_steps, h_steps, 1, grid, 0, nullptr, nullptr, nullptr);
                 break;
             }
             case 3: {
-                definite_scheme_first_second(tau_steps, h_steps, 2, grid, 0, nullptr, nullptr, nullptr);
+                definite_scheme_first_second(tau_steps, h_steps, 1, grid, 0, nullptr, nullptr, nullptr);
                 break;
             }
             case 4: {
-                definite_scheme_second_first(tau_steps, h_steps, 2, grid, 0, nullptr, nullptr, nullptr);
+                definite_scheme_second_first(tau_steps, h_steps, 1, grid, 0, nullptr, nullptr, nullptr);
                 break;
             }
             case 5: {
-                indefinite_scheme_first_first(tau_steps, h_steps, 2, grid, 0, nullptr, nullptr, nullptr);
+                indefinite_scheme_first_first(tau_steps, h_steps, 1, grid, 0, nullptr, nullptr, nullptr);
                 break;
             }
             case 6: {
-                indefinite_scheme_second_second(tau_steps, h_steps, 2, grid, 0, nullptr, nullptr, nullptr);
+                indefinite_scheme_second_second(tau_steps, h_steps, 1, grid, 0, nullptr, nullptr, nullptr);
                 break;
             }
             case 7: {
-                indefinite_scheme_first_second(tau_steps, h_steps, 2, grid, 0, nullptr, nullptr, nullptr);
+                indefinite_scheme_first_second(tau_steps, h_steps, 1, grid, 0, nullptr, nullptr, nullptr);
                 break;
             }
             case 8: {
-                indefinite_scheme_second_first(tau_steps, h_steps, 2, grid, 0, nullptr, nullptr, nullptr);
+                indefinite_scheme_second_first(tau_steps, h_steps, 1, grid, 0, nullptr, nullptr, nullptr);
                 break;
             }
         }
+
         double sum = 0, diff_max = -0.05;
         for (int i = 0; i < h_steps + 1; i++) {
             double diff = u(i * h, 1.0) - grid[tau_steps % 2][i];
@@ -507,11 +477,10 @@ int main(int argc, char **argv) {
         sum1 = sum1 * h;
         sum1 = sqrt(sum1);
 
-
-        printf("Ch abs: %f\n", sum);
-        printf("I2h abs: %f\n", diff_max);
-        printf("Ch rel: %f\n", diff_max / max_value);
+        printf("I2h abs: %f\n", sum);
+        printf("Ch abs: %f\n", diff_max);
         printf("I2h rel: %f\n", sum / sum1);
+        printf("Ch rel: %f\n", diff_max / max_value);
     } else {
 
         double *graph1 = (double *) calloc(h_steps + 1, sizeof(double));
@@ -519,40 +488,40 @@ int main(int argc, char **argv) {
         double *graph3 = (double *) calloc(h_steps + 1, sizeof(double));
         switch (scheme) {
             case 1: {
-                definite_scheme_first_first(tau_steps, h_steps, 2, grid, 1, graph1, graph2, graph3);
+                definite_scheme_first_first(tau_steps, h_steps, 1, grid, 1, graph1, graph2, graph3);
                 break;
             }
             case 2: {
-                definite_scheme_second_second(tau_steps, h_steps, 2, grid, 1, graph1, graph2, graph3);
+                definite_scheme_second_second(tau_steps, h_steps, 1, grid, 1, graph1, graph2, graph3);
                 break;
             }
             case 3: {
-                definite_scheme_first_second(tau_steps, h_steps, 2, grid, 1, graph1, graph2, graph3);
+                definite_scheme_first_second(tau_steps, h_steps, 1, grid, 1, graph1, graph2, graph3);
                 break;
             }
             case 4: {
-                definite_scheme_second_first(tau_steps, h_steps, 2, grid, 1, graph1, graph2, graph3);
+                definite_scheme_second_first(tau_steps, h_steps, 1, grid, 1, graph1, graph2, graph3);
                 break;
             }
             case 5: {
-                indefinite_scheme_first_first(tau_steps, h_steps, 2, grid, 1, graph1, graph2, graph3);
+                indefinite_scheme_first_first(tau_steps, h_steps, 1, grid, 1, graph1, graph2, graph3);
                 break;
             }
             case 6: {
-                indefinite_scheme_second_second(tau_steps, h_steps, 2, grid, 1, graph1, graph2, graph3);
+                indefinite_scheme_second_second(tau_steps, h_steps, 1, grid, 1, graph1, graph2, graph3);
                 break;
             }
             case 7: {
-                indefinite_scheme_first_second(tau_steps, h_steps, 2, grid, 1, graph1, graph2, graph3);
+                indefinite_scheme_first_second(tau_steps, h_steps, 1, grid, 1, graph1, graph2, graph3);
                 break;
             }
             case 8: {
-                indefinite_scheme_second_first(tau_steps, h_steps, 2, grid, 1, graph1, graph2, graph3);
+                indefinite_scheme_second_first(tau_steps, h_steps, 1, grid, 1, graph1, graph2, graph3);
                 break;
             }
         }
         std::ofstream fout1;
-        fout1.open("results.dat");
+        fout1.open("results1.dat");
         for (int i = 0; i < h_steps + 1; i++) {
             fout1 << i * h << ' ' << graph1 << std::endl;
         }
