@@ -188,7 +188,7 @@ void indefinite_scheme_first_second(int tau_steps, int h_steps, double a, double
     fi1 = (double *) calloc(tau_steps + 1, sizeof(double));
     psi2 = (double *) calloc(tau_steps + 1, sizeof(double));
     for (int i = 0; i < tau_steps + 1; i++) {
-        fi1[i] = u(0, i * tau);
+        fi1[i] = fi_1(0, i * tau);
         psi2[i] = psi_2(1, i * tau); //массивы из краевых условий
     }
 
@@ -249,7 +249,7 @@ void indefinite_scheme_second_first(int tau_steps, int h_steps, double a, double
     fi2 = (double *) calloc(tau_steps + 1, sizeof(double));
     for (int i = 0; i < tau_steps + 1; i++) {
         psi1[i] = psi_1(0, i * tau);
-        fi2[i] = u(1, i * tau); //массивы из краевых условий
+        fi2[i] = fi_2(1, i * tau); //массивы из краевых условий
     }
 
     //одинаковые значения для всей сетки
